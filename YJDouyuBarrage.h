@@ -5,6 +5,7 @@
 #include<qtcpsocket.h>
 #include "ui_YJDouyuBarrage.h"
 #include"KeepAliveThread.h"
+class ClientTypeCount;
 class QTimer;
 class YJDouyuBarrage : public QMainWindow
 {
@@ -20,7 +21,7 @@ private:
 	void login_room();
 	void login_group(int rid, int gid);
 	void init_connection();
-
+	void updateClientTypeCount(int clientType);
 public slots:
 	void ok_button_clicked();
 	void disconnect_button_clicked();
@@ -37,6 +38,7 @@ private:
 
 	KeepAliveThread* m_keepAlive_thread;
 	QTimer *m_keep_alive_timer;
+	ClientTypeCount *m_clientTypeCount;
 };
 
 #endif // YJDOUYUBARRAGE_H

@@ -5,6 +5,7 @@
 #include"Encoder.h"
 #include"Decoder.h"
 #include"GlobalDef.h"
+#include"ClientTypeCount.h"
 #include<qdatastream.h>
 #include<qbytearray.h>
 #include<qthread.h>
@@ -16,16 +17,16 @@
 YJDouyuBarrage::YJDouyuBarrage(QWidget *parent)
 	: QMainWindow(parent)
 {
+	m_clientTypeCount = new ClientTypeCount;
 	ui.setupUi(this);
 	init_tcp();
 	init_thread();
 	init_connection();
-
-
 }
 
 YJDouyuBarrage::~YJDouyuBarrage()
 {
+	delete m_clientTypeCount;
 	delete m_keepAlive_thread;
 }
 
@@ -114,19 +115,35 @@ void YJDouyuBarrage::read_and_process() {
 		if (tmp_loginres.m_res == -1) {
 			ui.m_barrage_textBrowser->append("login room fail!");
 		}
+		ui.m_barrage_textBrowser->append(
+			QString("LiveStat : ")+
+			std::to_string(tmp_loginres.m_livestat).data()
+			);
 	}
 	else if (tmp_messageType == MESSAGE_TYPE::BARRAGE_TYPE) {
 
 		BarrageRes tmp_barrageres;
 		tmp_barrageres.deserialize(message);
+
+		int clientType = tmp_barrageres.m_sender_type;
+		updateClientTypeCount(clientType);
 		
-		
-		ui.m_barrage_textBrowser->append(QString(tmp_barrageres.m_sender_name.data())
+		ui.m_barrage_textBrowser->append(
+			QString(clientType ==0?"Web": clientType == 1?"Andriod": clientType == 2?"iOS":"Computer")
+			+" "
+			+QString(tmp_barrageres.m_sender_name.data())
+			+"("+QString(std::to_string(tmp_barrageres.m_sender_level).data())+")"
 			+ " : "
-			+ QString(tmp_barrageres.m_barrage_content.data()));
+			+ QString(tmp_barrageres.m_barrage_content.data())
+			);
 	}
 }
-
+void YJDouyuBarrage::updateClientTypeCount(int clientType) {
+	clientType == 0 ? 0 : clientType == 1 ? m_clientTypeCount->m_android++ : clientType == 2 ? m_clientTypeCount->m_iOS++ : m_clientTypeCount->m_computer++;
+	ui.m_andriod_count_lineEdit->setText(std::to_string(m_clientTypeCount->m_android).data());
+	ui.m_iOS_count_lineEdit->setText(std::to_string(m_clientTypeCount->m_iOS).data());
+	ui.m_computer_count_lineEdit->setText(std::to_string(m_clientTypeCount->m_computer).data());
+}
 void YJDouyuBarrage::run_keepAlive_thread() {
 	m_keepAlive_thread->run();
 	m_keep_alive_timer->start(45000);

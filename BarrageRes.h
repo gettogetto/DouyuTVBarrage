@@ -16,6 +16,12 @@ public:
 
 	std::string m_sender_name;
 
+	int m_sender_id;
+
+	int m_sender_level;
+
+	int m_sender_type;
+
 	void deserialize(const std::string &recvString);
 
 };

@@ -19,7 +19,10 @@ void LoginRes::deserialize(std::string str) {
 	tmp_decoder.decode(to_be_decode);
 
 	std::string type_str = tmp_decoder.get_string_item("type");
+
 	if (type_str != "loginres") {
 		m_res = -1;
 	}
+
+	m_livestat = tmp_decoder.get_int_item("live_stat");
 }

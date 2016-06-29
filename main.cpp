@@ -1,3 +1,6 @@
+/*
+2016/6/29 finished
+*/
 #include "YJDouyuBarrage.h"
 #include <QtWidgets/QApplication>
 
