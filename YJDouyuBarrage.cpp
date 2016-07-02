@@ -25,7 +25,8 @@ YJDouyuBarrage::YJDouyuBarrage(QWidget *parent)
 	m_clientTypeCount = new ClientTypeCount;
 	ui.setupUi(this);
 	init_tcp();
-	init_thread();
+
+	init_keepAlive_thread();
 	init_connection();
 }
 
@@ -53,13 +54,26 @@ void YJDouyuBarrage::init_http() {
 	if (m_network_request == nullptr)
 		m_network_request = new QNetworkRequest(tmp_url);
 	connect(m_network_access_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(handleHttpReply(QNetworkReply*)));
-	//m_network_reply = m_network_access_manager->post(*m_network_request, QByteArray());
 	m_network_reply = m_network_access_manager->get(*m_network_request);
+
+	init_roomUpdate_thread();
 }
 
-void YJDouyuBarrage::init_thread() {
+void YJDouyuBarrage::init_keepAlive_thread() {
 	m_keep_alive_timer = new QTimer(this);
 	m_keepAlive_thread = new KeepAliveThread(m_barrage_tcp_socket);
+
+
+}
+
+
+void YJDouyuBarrage::init_roomUpdate_thread() {
+	QString tmp_room = ui.m_roomID_lineEdit->text();
+	if (m_room_update_thread == nullptr) m_room_update_thread = new RoomUpdateThread(tmp_room, m_network_access_manager);
+	if (m_room_update_timer == nullptr) m_room_update_timer = new QTimer(this);
+	m_room_update_timer->start(ROOMTIMEINTERVAL);
+	connect(m_room_update_timer, SIGNAL(timeout()), this, SLOT(run_room_update_thread()));
+
 }
 
 void YJDouyuBarrage::login_room() {
@@ -93,6 +107,8 @@ void YJDouyuBarrage::init_connection() {
 	//connect(m_barrage_tcp_socket, SIGNAL(error()), this, SLOT(handleTcpSocketError()));
 	connect(m_barrage_tcp_socket, SIGNAL(connected()), this, SLOT(handleTcpSocketConnected()));
 	connect(m_barrage_tcp_socket, SIGNAL(disconnected()), this, SLOT(handleTcpSocketDisconnected()));
+
+
 }
 
 void YJDouyuBarrage::ok_button_clicked() {
@@ -167,8 +183,14 @@ void YJDouyuBarrage::updateClientTypeCount(int clientType) {
 }
 void YJDouyuBarrage::run_keepAlive_thread() {
 	m_keepAlive_thread->run();
-	m_keep_alive_timer->start(45000);
+	m_keep_alive_timer->start(KEEPALIVETIMEINTERVAL);
 	ui.m_barrage_textBrowser->append("keep alive every 45s");
+}
+
+void YJDouyuBarrage::run_room_update_thread() {
+	ui.m_barrage_textBrowser->append("run_room_update_thread");
+	m_room_update_timer->start(ROOMTIMEINTERVAL);
+	m_room_update_thread->run();
 }
 
 void YJDouyuBarrage::handleTcpSocketError() {
@@ -180,7 +202,7 @@ void YJDouyuBarrage::handleTcpSocketConnected() {
 	login_room();
 	login_group(ui.m_roomID_lineEdit->text().toInt(), -9999);
 	m_keepAlive_thread->run();
-	m_keep_alive_timer->start(45000);
+	m_keep_alive_timer->start(KEEPALIVETIMEINTERVAL);
 
 }
 
@@ -189,15 +211,14 @@ void YJDouyuBarrage::handleTcpSocketDisconnected() {
 }
 
 void YJDouyuBarrage::handleHttpReply(QNetworkReply* reply) {
+	qDebug() << "void YJDouyuBarrage::handleHttpReply(QNetworkReply* reply) ";
 	QVariant status_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
 	if (reply->error() == QNetworkReply::NoError) {
 		QByteArray replyData = reply->readAll();
-		//QString replyStr(replyData);
-		//ui.m_barrage_textBrowser->append(replyStr);
 
-
-		//QString error = JsonParse(replyData, QString("error"));
-		QString error = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(replyData).object())), std::vector<QString>{"error"}, 0);
+		QString error = JsonMultiNestedObject(
+			QJsonValue(QJsonObject(QJsonDocument::fromJson(replyData).object())), 
+			std::vector<QString>{"error"}, 0);
 		if (error != "0") {
 			ui.m_barrage_textBrowser->append("failed to get room imformation!");
 			return;
@@ -214,23 +235,47 @@ void YJDouyuBarrage::handleHttpReply(QNetworkReply* reply) {
 
 void YJDouyuBarrage::roomInformationParse(const QByteArray& bytearray) {
 
-	QString room_id = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data","room_id"},0);
-	
-	QString room_name = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data", "room_name"}, 0);
-	
-	QString room_status = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data", "room_status"}, 0);
-	
-	QString online = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data", "online"}, 0);
-	
-	QString owner_weight = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data", "owner_weight"}, 0);
-	
-	QString fans_num = JsonMultiNestedObject(QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())), std::vector<QString>{"data", "fans_num"}, 0);
+	QString room_id = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "room_id"}, 0);
+
+	QString room_name = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "room_name"}, 0);
+
+	QString room_status = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "room_status"}, 0);
+
+	QString online = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "online"}, 0);
+
+	QString owner_weight = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "owner_weight"}, 0);
+
+	QString fans_num = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "fans_num"}, 0);
+
+	QString owner = JsonMultiNestedObject(
+		QJsonValue(QJsonObject(QJsonDocument::fromJson(bytearray).object())),
+		std::vector<QString>{"data", "owner_name"}, 0);
+	/*
 	ui.m_barrage_textBrowser->append("fans_num:" + fans_num);
 	ui.m_barrage_textBrowser->append("room_id:" + room_id);
 	ui.m_barrage_textBrowser->append("room_name:" + room_name);
 	ui.m_barrage_textBrowser->append("room_status:" + room_status);
 	ui.m_barrage_textBrowser->append("online:" + online);
 	ui.m_barrage_textBrowser->append("owner_weight:" + owner_weight);
+	*/
+	ui.m_fansNum_lineEdit->setText(fans_num);
+	ui.m_onlineNum_lineEdit->setText(online);
+	ui.m_roomOwner_lineEdit->setText(owner);
+	ui.m_roomName_lineEdit->setText(room_name);
+	ui.m_roomOwnerWeight_lineEdit->setText(owner_weight);
+	ui.m_roomStatus_lineEdit->setText(room_status);
 }
 /*
 "{

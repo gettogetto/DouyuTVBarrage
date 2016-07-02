@@ -5,11 +5,14 @@
 #include<qtcpsocket.h>
 #include "ui_YJDouyuBarrage.h"
 #include"KeepAliveThread.h"
+#include"RoomUpdateThread.h"
 class ClientTypeCount;
 class QTimer;
 class QNetworkAccessManager;
 class QNetworkReply;
 class QNetworkRequest;
+const int ROOMTIMEINTERVAL = 5000;
+const int KEEPALIVETIMEINTERVAL = 45000;
 class YJDouyuBarrage : public QMainWindow
 {
 	Q_OBJECT
@@ -20,7 +23,8 @@ public:
 	~YJDouyuBarrage();
 private:
 	void init_tcp();
-	void init_thread();
+	void init_keepAlive_thread();
+	void init_roomUpdate_thread();
 	void login_room();
 	void login_group(int rid, int gid);
 	void init_connection();
@@ -33,6 +37,7 @@ public slots:
 	void disconnect_button_clicked();
 	void read_and_process();
 	void run_keepAlive_thread();
+	void run_room_update_thread();
 	void handleTcpSocketError();
 	void handleTcpSocketConnected();
 	void handleTcpSocketDisconnected();
@@ -55,7 +60,8 @@ private:
 	QNetworkAccessManager* m_network_access_manager = nullptr;
 	QNetworkReply* m_network_reply = nullptr;
 	QNetworkRequest* m_network_request = nullptr;
-	
+	QTimer *m_room_update_timer = nullptr;
+	RoomUpdateThread* m_room_update_thread = nullptr;
 
 };
 
