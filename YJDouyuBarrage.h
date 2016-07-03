@@ -12,7 +12,7 @@ class QNetworkAccessManager;
 class QNetworkReply;
 class QNetworkRequest;
 const int ROOMTIMEINTERVAL = 5000;
-const int KEEPALIVETIMEINTERVAL = 45000;
+const int KEEPALIVETIMEINTERVAL = 5000;
 class YJDouyuBarrage : public QMainWindow
 {
 	Q_OBJECT
@@ -38,7 +38,7 @@ public slots:
 	void read_and_process();
 	void run_keepAlive_thread();
 	void run_room_update_thread();
-	void handleTcpSocketError();
+	//void handleTcpSocketError();
 	void handleTcpSocketConnected();
 	void handleTcpSocketDisconnected();
 	void handleHttpReply(QNetworkReply*);

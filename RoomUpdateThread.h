@@ -8,7 +8,7 @@ class RoomUpdateThread :
 public:
 	RoomUpdateThread(const QString& roomid,QNetworkAccessManager* networkmanager=nullptr);
 	~RoomUpdateThread();
-
+protected:
 	void run() override;
 private:
 	QNetworkAccessManager* m_networkmanager;

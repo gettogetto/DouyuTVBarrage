@@ -122,6 +122,8 @@ void YJDouyuBarrage::disconnect_button_clicked() {
 	m_barrage_tcp_socket->disconnectFromHost();
 
 	m_keepAlive_thread->terminate();
+
+	m_room_update_thread->terminate();
 }
 
 void YJDouyuBarrage::read_and_process() {
@@ -182,20 +184,21 @@ void YJDouyuBarrage::updateClientTypeCount(int clientType) {
 	ui.m_computer_count_lineEdit->setText(std::to_string(m_clientTypeCount->m_computer).data());
 }
 void YJDouyuBarrage::run_keepAlive_thread() {
-	m_keepAlive_thread->run();
-	m_keep_alive_timer->start(KEEPALIVETIMEINTERVAL);
+	m_keepAlive_thread->start();
+	//m_keep_alive_timer->start(KEEPALIVETIMEINTERVAL);
 	ui.m_barrage_textBrowser->append("keep alive every 45s");
 }
 
 void YJDouyuBarrage::run_room_update_thread() {
 	ui.m_barrage_textBrowser->append("run_room_update_thread");
-	m_room_update_timer->start(ROOMTIMEINTERVAL);
-	m_room_update_thread->run();
+	m_room_update_thread->start();
+	//m_room_update_timer->start(ROOMTIMEINTERVAL);
+	//m_room_update_thread->run();
 }
 
-void YJDouyuBarrage::handleTcpSocketError() {
-	ui.m_barrage_textBrowser->append(m_barrage_tcp_socket->errorString());
-}
+//void YJDouyuBarrage::handleTcpSocketError() {
+//	ui.m_barrage_textBrowser->append(m_barrage_tcp_socket->errorString());
+//}
 
 void YJDouyuBarrage::handleTcpSocketConnected() {
 	ui.m_barrage_textBrowser->append(QString("connected success!"));

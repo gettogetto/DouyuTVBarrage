@@ -7,6 +7,7 @@ public:
 	KeepAliveThread(QTcpSocket* tcpSocket=nullptr);
 	~KeepAliveThread();
 
+protected:
 	void run() override;
 private:
 	QTcpSocket *m_tcp_socket;
