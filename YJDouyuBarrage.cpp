@@ -19,6 +19,8 @@
 #include<qnetworkrequest.h>
 #include<qurl.h>
 #include<qjsondocument.h>
+const int ROOMTIMEINTERVAL = 50000;
+const int KEEPALIVETIMEINTERVAL = 50000;
 YJDouyuBarrage::YJDouyuBarrage(QWidget *parent)
 	: QMainWindow(parent)
 {
@@ -204,7 +206,7 @@ void YJDouyuBarrage::handleTcpSocketConnected() {
 	ui.m_barrage_textBrowser->append(QString("connected success!"));
 	login_room();
 	login_group(ui.m_roomID_lineEdit->text().toInt(), -9999);
-	m_keepAlive_thread->run();
+	m_keepAlive_thread->start();
 	m_keep_alive_timer->start(KEEPALIVETIMEINTERVAL);
 
 }
@@ -278,7 +280,7 @@ void YJDouyuBarrage::roomInformationParse(const QByteArray& bytearray) {
 	ui.m_roomOwner_lineEdit->setText(owner);
 	ui.m_roomName_lineEdit->setText(room_name);
 	ui.m_roomOwnerWeight_lineEdit->setText(owner_weight);
-	ui.m_roomStatus_lineEdit->setText(room_status);
+	ui.m_roomStatus_lineEdit->setText(room_status=="1"?"On":"Off");
 }
 /*
 "{

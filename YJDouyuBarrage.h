@@ -11,8 +11,7 @@ class QTimer;
 class QNetworkAccessManager;
 class QNetworkReply;
 class QNetworkRequest;
-const int ROOMTIMEINTERVAL = 5000;
-const int KEEPALIVETIMEINTERVAL = 5000;
+
 class YJDouyuBarrage : public QMainWindow
 {
 	Q_OBJECT
